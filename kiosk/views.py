@@ -86,7 +86,7 @@ def getTodaysAppointments(doctor):
 def login(request):
     return render(request, 'kiosk/login.html', {'redirect_uri':settings.REDIRECT_URI, 'client_id':settings.CLIENT_ID, 'scope':scope})
 
-def patient(request):
+def login_redirect(request):
     error = request.GET.get('error')
     if (error is not None):
         raise ValueError('Error authorizing application: %s' % error)
@@ -128,7 +128,7 @@ def patient(request):
     # get appointments for today /appointments
     getTodaysAppointments(doctor)
 
-    return render(request, 'kiosk/patient.html', {'doctor':username, 'doctor_created':doctorCreated}) #patients:createdPatients
+    return render(request, 'kiosk/login_redirect.html', {'doctor':username, 'doctor_created':doctorCreated}) #patients:createdPatients
 
 
 '''

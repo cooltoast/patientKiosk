@@ -28,7 +28,7 @@ data.close()
 SECRET_KEY = keys['django_secret_key']
 CLIENT_ID = keys['client_id']
 CLIENT_SECRET = keys['client_secret']
-REDIRECT_URI = 'http://localhost:8000/kiosk/patient'
+REDIRECT_URI = 'http://localhost:8000/kiosk/login_redirect'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
