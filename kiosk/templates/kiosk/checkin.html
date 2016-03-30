@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block body %}
+<h4>Welcome to Dr. <b>{{doctor}}</b>'s office!</h4>
+<br>
+<h2>Sign in below</h2>
+<form action="/kiosk/checkin/" method="post">
+  {% csrf_token %}
+  {{ form }}
+  <input type="submit" value="Submit" />
+</form>
+{% endblock %}

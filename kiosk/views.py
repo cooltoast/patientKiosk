@@ -4,6 +4,7 @@ from django.conf import settings
 import datetime, pytz, requests
 
 from .models import Doctor, Patient, Appointment
+from .forms import PatientForm
 
 BASE_URL = 'https://drchrono.com'
 
@@ -85,6 +86,22 @@ def getTodaysAppointments(doctor):
 # Create your views here.
 def login(request):
     return render(request, 'kiosk/login.html', {'redirect_uri':settings.REDIRECT_URI, 'client_id':settings.CLIENT_ID, 'scope':scope})
+
+def checkin(request):
+    if request.method == 'POST':
+        # create a form instance and populate it with data from the request:
+        form = PatientForm(request.POST)
+        # check whether it's valid:
+        if form.is_valid():
+            # process the data in form.cleaned_data as required
+            # ...
+            # redirect to a new URL:
+            return render(request, 'kiosk/checkin.html', {'form': form})
+
+    else:
+        form = PatientForm()
+
+    return render(request, 'kiosk/checkin.html', {'form': form})
 
 def login_redirect(request):
     error = request.GET.get('error')

@@ -20,6 +20,9 @@ class Patient(models.Model):
   email = models.EmailField(default=None)
   #add more fields
 
+  def __str__(self):
+    return '%s, %s' % (self.name, self.date_of_birth.date())
+
 
 class Appointment(models.Model):
   start_time = models.DateTimeField()
