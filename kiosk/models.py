@@ -14,15 +14,16 @@ class Doctor(models.Model):
 
 class Patient(models.Model):
   name = models.CharField(max_length=200)
+  doctor = models.ForeignKey(Doctor, default=None, on_delete=models.CASCADE)
   patient_id = models.IntegerField(default=0)
   date_of_birth = models.DateTimeField(default=datetime.datetime.now)
   email = models.EmailField(default=None)
-  #doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE)
   #add more fields
 
 
 class Appointment(models.Model):
   start_time = models.DateTimeField()
   end_time = models.DateTimeField()
+  doctor = models.ForeignKey(Doctor, default=None, on_delete=models.CASCADE)
   patient = models.ForeignKey(Patient, default=None, blank=True, null=True, on_delete=models.CASCADE)
   is_break = models.BooleanField(default=False)

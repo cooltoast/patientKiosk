@@ -14,7 +14,7 @@ def getHeader(access_token):
     'Authorization': 'Bearer %s' % access_token
   }
 
-
+# retrieve and save todays appointments and update perninent patients
 def getTodaysAppointments(doctor):
   appointments = [] 
   
@@ -45,13 +45,13 @@ def getTodaysAppointments(doctor):
       dob = datetime.datetime.strptime(dobString,'%Y%m%d')
       timezoneAwareDob = pytz.timezone('America/Los_Angeles').localize(dob)
 
-      # update if exists or create new
+      # update Patient if exists or create new
       params = {
         'name':full_name,
+        'doctor':doctor,
         'email':data['email'],
         'date_of_birth':timezoneAwareDob,
         'patient_id':patient_id,
-        #'doctor':doctor,
         # etc
       }
       patient, patientCreated = Patient.objects.update_or_create(
@@ -60,7 +60,6 @@ def getTodaysAppointments(doctor):
       )
 
       if patientCreated:
-        # only add important info
         print 'created patient: %s' % params
 
 
@@ -70,10 +69,11 @@ def getTodaysAppointments(doctor):
     timezoneAwareStartTime = pytz.timezone('America/Los_Angeles').localize(start_time)
     timezoneAwareEndTime = timezoneAwareStartTime + datetime.timedelta(minutes=duration)
 
-    # update if exists or create new
+    # update Appointment if exists or create new
     params = {
       'start_time':timezoneAwareStartTime,
       'end_time':timezoneAwareEndTime,
+      'doctor':doctor,
       'patient':patient,
       'is_break':is_break
     }
@@ -82,7 +82,56 @@ def getTodaysAppointments(doctor):
       **params
     )
 
+# Create your views here.
+def login(request):
+    return render(request, 'kiosk/login.html', {'redirect_uri':settings.REDIRECT_URI, 'client_id':settings.CLIENT_ID, 'scope':scope})
 
+def patient(request):
+    error = request.GET.get('error')
+    if (error is not None):
+        raise ValueError('Error authorizing application: %s' % error)
+
+    response = requests.post('%s/o/token/' % BASE_URL, data={
+        'code': request.GET.get('code'),
+        'grant_type': 'authorization_code',
+        'redirect_uri': settings.REDIRECT_URI,
+        'client_id': settings.CLIENT_ID,
+        'client_secret': settings.CLIENT_SECRET
+    })
+    response.raise_for_status()
+    data = response.json()
+
+    access_token = data['access_token']
+    refresh_token = data['refresh_token']
+    expires_timestamp = datetime.datetime.now(pytz.utc) + datetime.timedelta(seconds=data['expires_in'])
+
+    response = requests.get('%s/api/users/current' % BASE_URL, headers=getHeader(access_token))
+    response.raise_for_status()
+    data = response.json()
+
+    doctor_id = data['doctor']
+    username = data['username']
+
+    # update Doctor if exists or create new
+    params = {
+      'name':username,
+      'doctor_id':doctor_id,
+      'access_token':access_token,
+      'refresh_token':refresh_token,
+      'expires_timestamp':expires_timestamp
+    }
+    doctor, doctorCreated = Doctor.objects.update_or_create(
+      doctor_id=doctor_id,
+      defaults=params
+    )
+
+    # get appointments for today /appointments
+    getTodaysAppointments(doctor)
+
+    return render(request, 'kiosk/patient.html', {'doctor':username, 'doctor_created':doctorCreated}) #patients:createdPatients
+
+
+'''
 def updatePatientList(doctor):
   patients = []
   createdPatients = []
@@ -118,52 +167,4 @@ def updatePatientList(doctor):
       createdPatients.append(params)
 
   return createdPatients
-
-# Create your views here.
-def login(request):
-    return render(request, 'kiosk/login.html', {'redirect_uri':settings.REDIRECT_URI, 'client_id':settings.CLIENT_ID, 'scope':scope})
-
-def patient(request):
-    error = request.GET.get('error')
-    if (error is not None):
-        raise ValueError('Error authorizing application: %s' % error)
-
-    response = requests.post('%s/o/token/' % BASE_URL, data={
-        'code': request.GET.get('code'),
-        'grant_type': 'authorization_code',
-        'redirect_uri': settings.REDIRECT_URI,
-        'client_id': settings.CLIENT_ID,
-        'client_secret': settings.CLIENT_SECRET
-    })
-    response.raise_for_status()
-    data = response.json()
-
-    access_token = data['access_token']
-    refresh_token = data['refresh_token']
-    expires_timestamp = datetime.datetime.now(pytz.utc) + datetime.timedelta(seconds=data['expires_in'])
-
-    response = requests.get('%s/api/users/current' % BASE_URL, headers=getHeader(access_token))
-    response.raise_for_status()
-    data = response.json()
-
-    doctor_id = data['doctor']
-    username = data['username']
-
-    # update if exists or create new
-    params = {
-      'name':username,
-      'doctor_id':doctor_id,
-      'access_token':access_token,
-      'refresh_token':refresh_token,
-      'expires_timestamp':expires_timestamp
-    }
-    doctor, doctorCreated = Doctor.objects.update_or_create(
-      doctor_id=doctor_id,
-      defaults=params
-    )
-
-    # get appointments for today /appointments
-    getTodaysAppointments(doctor)
-
-    return render(request, 'kiosk/patient.html', {'doctor':username, 'doctor_created':doctorCreated}) #patients:createdPatients
-
+'''
