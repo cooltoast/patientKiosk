@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block body %}
+<h4>Welcome Dr. <b>{{doctor}}</b>! You've successfully logged in!</h4>
+{% if doctor_created %}
+  <div>We've saved your credentials</div>
+{% else %}
+  <div>We've updated your credentials</div>
+{% endif %}
+{% if patients %}
+  <div>Here are your patients that we've newly added to our database</div>
+  <ul id="patients">
+  {% for patient in patients %}
+    <li>{{patient.patient_id}}: {{patient.first_name}} {{patient.last_name}} {{patient.date_of_birth}} {{patient.email}}</li>
+  {% endfor %}
+  </ul>
+{% endif %}
+{% endblock %}

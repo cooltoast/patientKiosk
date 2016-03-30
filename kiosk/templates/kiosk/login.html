@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block body %}
+{% if client_id and scope %}
+    <h4>Welcome, Doctor! Click the link below to sign in with drchrono</h4>
+    <a href='https://drchrono.com/o/authorize/?redirect_uri={{redirect_uri|urlencode}}&response_type=code&client_id={{client_id|urlencode}}&scope={{scope|urlencode}}'>Log In</a>
+{% else %}
+    <div>Something went wrong: client_id and/or scopes unavailable</div>
+{% endif %}
+{% endblock %}
