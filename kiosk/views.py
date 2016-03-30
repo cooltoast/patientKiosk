@@ -7,7 +7,7 @@ from .models import Doctor, Patient, Appointment
 
 BASE_URL = 'https://drchrono.com'
 
-scope = 'patients:summary:read patients:summary:write calendar:read calendar:write clinical:read clinical:write'
+scope = 'patients:read patients:write calendar:read calendar:write clinical:read clinical:write'
 
 def getHeader(access_token):
   return {
@@ -27,6 +27,60 @@ def getTodaysAppointments(doctor):
     data = requests.get(url, params=params, headers=getHeader(doctor.access_token)).json()
     appointments.extend(data['results'])
     url = data['next'] # A JSON null on the last page
+
+  for appointment in appointments:
+    patient_id = appointment['patient']
+    patient = None
+    is_break = True
+
+    # update patient's info if appointment is not break
+    if patient_id is not None:
+      is_break = False
+
+      patient_url = '%s/api/patients/%s' % (BASE_URL, patient_id)
+      data = requests.get(patient_url, headers=getHeader(doctor.access_token)).json()
+
+      full_name = data['first_name'] + ' ' + data['last_name']
+      dobString = data['date_of_birth'].replace('-','')
+      dob = datetime.datetime.strptime(dobString,'%Y%m%d')
+      timezoneAwareDob = pytz.timezone('America/Los_Angeles').localize(dob)
+
+      # update if exists or create new
+      params = {
+        'name':full_name,
+        'email':data['email'],
+        'date_of_birth':timezoneAwareDob,
+        'patient_id':patient_id,
+        #'doctor':doctor,
+        # etc
+      }
+      patient, patientCreated = Patient.objects.update_or_create(
+        patient_id=patient_id,
+        defaults=params
+      )
+
+      if patientCreated:
+        # only add important info
+        print 'created patient: %s' % params
+
+
+    duration = int(appointment['duration'])
+    start_time_iso = appointment['scheduled_time']
+    start_time = datetime.datetime.strptime(start_time_iso, "%Y-%m-%dT%H:%M:%S")
+    timezoneAwareStartTime = pytz.timezone('America/Los_Angeles').localize(start_time)
+    timezoneAwareEndTime = timezoneAwareStartTime + datetime.timedelta(minutes=duration)
+
+    # update if exists or create new
+    params = {
+      'start_time':timezoneAwareStartTime,
+      'end_time':timezoneAwareEndTime,
+      'patient':patient,
+      'is_break':is_break
+    }
+    appointment, appointmentCreated = Appointment.objects.update_or_create(
+      defaults=params,
+      **params
+    )
 
 
 def updatePatientList(doctor):

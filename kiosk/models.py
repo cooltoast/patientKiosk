@@ -24,4 +24,5 @@ class Patient(models.Model):
 class Appointment(models.Model):
   start_time = models.DateTimeField()
   end_time = models.DateTimeField()
-  patient = models.ForeignKey(Patient, on_delete=models.CASCADE)
+  patient = models.ForeignKey(Patient, default=None, blank=True, null=True, on_delete=models.CASCADE)
+  is_break = models.BooleanField(default=False)
