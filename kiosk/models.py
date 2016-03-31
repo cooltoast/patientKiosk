@@ -28,7 +28,6 @@ class Appointment(models.Model):
   appointment_id = models.CharField(default='', max_length=200)
   scheduled_time = models.DateTimeField()
   duration = models.IntegerField(default=0)
-  end_time = models.DateTimeField()
   doctor = models.ForeignKey(Doctor, default=None, on_delete=models.CASCADE)
   patient = models.ForeignKey(Patient, default=None, blank=True, null=True, on_delete=models.CASCADE)
   exam_room = models.IntegerField(default=-1)

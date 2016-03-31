@@ -69,14 +69,12 @@ def getTodaysAppointments(doctor):
     scheduled_time_iso = appointment['scheduled_time']
     scheduled_time = datetime.datetime.strptime(scheduled_time_iso, "%Y-%m-%dT%H:%M:%S")
     timezoneAwareScheduledTime = pytz.utc.localize(scheduled_time)
-    timezoneAwareEndTime = timezoneAwareScheduledTime + datetime.timedelta(minutes=duration)
 
     # update Appointment if exists or create new
     params = {
       'appointment_id':appointment_id,
       'scheduled_time':timezoneAwareScheduledTime,
       'duration':duration,
-      'end_time':timezoneAwareEndTime,
       'doctor':doctor,
       'patient':patient,
       'exam_room':appointment['exam_room'],
