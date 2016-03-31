@@ -3,6 +3,9 @@
 <h4>Welcome to Dr. <b>{{doctor}}</b>'s office!</h4>
 <br>
 <h2>Sign in below</h2>
+{% if message %}
+  <div>{{message}}</div>
+{% endif %}
 <form action="/kiosk/checkin/" method="post">
   {% csrf_token %}
   {{ form }}

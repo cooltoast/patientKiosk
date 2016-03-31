@@ -4,7 +4,7 @@ from django.conf import settings
 import datetime, pytz, requests
 
 from .models import Doctor, Patient, Appointment
-from .forms import PatientForm
+from .forms import AppointmentForm
 
 BASE_URL = 'https://drchrono.com'
 
@@ -30,6 +30,7 @@ def getTodaysAppointments(doctor):
     url = data['next'] # A JSON null on the last page
 
   for appointment in appointments:
+    appointment_id = appointment['id']
     patient_id = appointment['patient']
     patient = None
     is_break = True
@@ -44,7 +45,7 @@ def getTodaysAppointments(doctor):
       full_name = data['first_name'] + ' ' + data['last_name']
       dobString = data['date_of_birth'].replace('-','')
       dob = datetime.datetime.strptime(dobString,'%Y%m%d')
-      timezoneAwareDob = pytz.timezone('America/Los_Angeles').localize(dob)
+      timezoneAwareDob = pytz.utc.localize(dob)
 
       # update Patient if exists or create new
       params = {
@@ -65,17 +66,21 @@ def getTodaysAppointments(doctor):
 
 
     duration = int(appointment['duration'])
-    start_time_iso = appointment['scheduled_time']
-    start_time = datetime.datetime.strptime(start_time_iso, "%Y-%m-%dT%H:%M:%S")
-    timezoneAwareStartTime = pytz.timezone('America/Los_Angeles').localize(start_time)
-    timezoneAwareEndTime = timezoneAwareStartTime + datetime.timedelta(minutes=duration)
+    scheduled_time_iso = appointment['scheduled_time']
+    scheduled_time = datetime.datetime.strptime(scheduled_time_iso, "%Y-%m-%dT%H:%M:%S")
+    timezoneAwareScheduledTime = pytz.utc.localize(scheduled_time)
+    timezoneAwareEndTime = timezoneAwareScheduledTime + datetime.timedelta(minutes=duration)
 
     # update Appointment if exists or create new
     params = {
-      'start_time':timezoneAwareStartTime,
+      'appointment_id':appointment_id,
+      'scheduled_time':timezoneAwareScheduledTime,
+      'duration':duration,
       'end_time':timezoneAwareEndTime,
       'doctor':doctor,
       'patient':patient,
+      'exam_room':appointment['exam_room'],
+      'office':appointment['office'],
       'is_break':is_break
     }
     appointment, appointmentCreated = Appointment.objects.update_or_create(
@@ -89,17 +94,20 @@ def login(request):
 
 def checkin(request):
     if request.method == 'POST':
-        # create a form instance and populate it with data from the request:
-        form = PatientForm(request.POST)
+        form = AppointmentForm(request.POST)
         # check whether it's valid:
         if form.is_valid():
-            # process the data in form.cleaned_data as required
-            # ...
-            # redirect to a new URL:
-            return render(request, 'kiosk/checkin.html', {'form': form})
+            appt = form.cleaned_data['appointment']
+            url = '%s/api/appointments/%s' % (BASE_URL, appt.appointment_id)
+
+            response = requests.patch(url, headers=getHeader(appt.doctor.access_token), data={'status':"Arrived"})
+            response.raise_for_status()
+            data = response.json()
+
+            return render(request, 'kiosk/checkin.html', {'form': AppointmentForm(), 'message':'Successfully checked in for %s!' % appt.patient.name})
 
     else:
-        form = PatientForm()
+        form = AppointmentForm()
 
     return render(request, 'kiosk/checkin.html', {'form': form})
 
