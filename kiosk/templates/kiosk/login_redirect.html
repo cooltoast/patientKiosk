@@ -1,6 +1,12 @@
 {% extends "base.html" %}
 {% block body %}
 <h4>Welcome Dr. <b>{{doctor}}</b>! You've successfully logged in!</h4>
+{% if offices %}
+  <a href='/kiosk/set_office/'>Click to select which office you're using</a>
+{% else %}
+  <div>You don't have any available offices</div>
+{% endif %}
+
 {% if doctor_created %}
   <div>We've saved your credentials</div>
 {% else %}

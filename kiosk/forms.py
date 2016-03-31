@@ -1,12 +1,14 @@
 import datetime
 from django import forms
-from .models import Doctor, Patient, Appointment
+from .models import Doctor, Patient, Appointment, Office, ExamRoom
+
+class OfficeForm(forms.Form):
+  office = forms.ModelChoiceField(queryset=Office.objects.all(), empty_label="(Select Office)")
 
 class AppointmentForm(forms.Form):
   today = datetime.datetime.today()
   appointment = forms.ModelChoiceField(queryset=Appointment.objects.filter(scheduled_time__month=today.month, scheduled_time__day=today.day, is_break=False), empty_label="(Select Appointment)")
 
-from django import forms
 
 class NewAppointmentForm(forms.Form):
     scheduled_time = forms.TimeField()

@@ -14,6 +14,21 @@ class Doctor(models.Model):
   def __unicode__(self):
     return '%s, %s' % (self.name, self.doctor_id)
 
+class Office(models.Model):
+  name = models.CharField(max_length=200,default='')
+  office_id = models.IntegerField(default=-1)
+  doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE)
+  is_active = models.BooleanField(default=False)
+
+  def __unicode__(self):
+    return '%s, id: %s, is_active: %s' % (self.name, self.office_id, self.is_active)
+
+class ExamRoom(models.Model):
+  room_id = models.IntegerField(default=-1)
+  office = models.ForeignKey(Office, on_delete=models.CASCADE)
+
+  def __unicode__(self):
+    return 'exam room %s in office: %s, id %s' % (self.room_id, self.office.name, self.office.office_id)
 
 class Patient(models.Model):
   name = models.CharField(max_length=200)
@@ -33,8 +48,8 @@ class Appointment(models.Model):
   duration = models.IntegerField(default=0)
   doctor = models.ForeignKey(Doctor, default=None, on_delete=models.CASCADE)
   patient = models.ForeignKey(Patient, default=None, blank=True, null=True, on_delete=models.CASCADE)
-  exam_room = models.IntegerField(default=-1)
-  office = models.IntegerField(default=-1)
+  exam_room = models.ForeignKey(ExamRoom, default=None, blank=True, null=True, on_delete=models.CASCADE)
+  office = models.ForeignKey(Office, on_delete=models.CASCADE)
   is_break = models.BooleanField(default=False)
 
   def __unicode__(self):

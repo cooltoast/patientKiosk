@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block body %}
+<h2>Ok doctor, select which office you're using today</h2>
+<form action="/kiosk/set_office/" method="post">
+  {% csrf_token %}
+  {{ form }}
+  <input type="submit" value="Submit" />
+</form>
+{% if message %}
+  <div>{{message}}</div>
+  <br>
+  <a href='/kiosk/checkin'>Check in for your appointment</a>
+  <br>
+  <a href='/kiosk/new_patient'>Sign up as a new patient</a>
+  <br>
+  <a href='/kiosk/new_appt'>Schedule a new appointment</a>
+{% endif %}
+{% endblock %}

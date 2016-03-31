@@ -3,12 +3,12 @@ from django.http import HttpResponse
 from django.conf import settings
 import datetime, pytz, requests
 
-from .models import Doctor, Patient, Appointment
-from .forms import AppointmentForm
+from .models import Doctor, Patient, Appointment, Office, ExamRoom
+from .forms import AppointmentForm, OfficeForm
 
 BASE_URL = 'https://drchrono.com'
 
-scope = 'patients:read patients:write calendar:read calendar:write clinical:read clinical:write'
+scope = 'patients:read patients:write calendar:read calendar:write clinical:read clinical:write user:read user:write'
 
 from .forms import NewAppointmentForm
 from django.views.generic.edit import FormView
@@ -48,11 +48,14 @@ def getHeader(access_token):
 
 # retrieve and save todays appointments and update perninent patients
 def getTodaysAppointments(doctor):
+
   appointments = [] 
   
+  activeOffice = Office.objects.get(is_active=True)
   url = '%s/api/appointments' % BASE_URL
   params = {
     'doctor':doctor.doctor_id,
+    'office':activeOffice.office_id,
     'date':datetime.datetime.now().isoformat()
   }
   while url:
@@ -101,6 +104,10 @@ def getTodaysAppointments(doctor):
     scheduled_time = datetime.datetime.strptime(scheduled_time_iso, "%Y-%m-%dT%H:%M:%S")
     timezoneAwareScheduledTime = pytz.utc.localize(scheduled_time)
 
+    examRoom = None
+    if not is_break:
+      examRoom = activeOffice.examroom_set.get(room_id=appointment['exam_room'])
+
     # update Appointment if exists or create new
     params = {
       'appointment_id':appointment_id,
@@ -108,8 +115,8 @@ def getTodaysAppointments(doctor):
       'duration':duration,
       'doctor':doctor,
       'patient':patient,
-      'exam_room':appointment['exam_room'],
-      'office':appointment['office'],
+      'exam_room':examRoom,
+      'office':activeOffice,
       'is_break':is_break
     }
     appointment, appointmentCreated = Appointment.objects.update_or_create(
@@ -124,7 +131,26 @@ def login(request):
 def new_appt(request):
     return render(request, 'kiosk/new_appt.html')
 
+def set_office(request):
+    template = 'kiosk/set_office.html'
+    if request.method == 'POST':
+        form = OfficeForm(request.POST)
+        if form.is_valid():
+            office = form.cleaned_data['office']
+            office.is_active = True
+            office.save()
+            Office.objects.exclude(office_id=office.office_id).update(is_active=False)
+
+            return render(request, template, {'form': OfficeForm(), 'message':'Successfully checked in for office: %s!' % office.name})
+
+    else:
+        form = OfficeForm()
+
+    return render(request, template, {'form': form})
+
+
 def checkin(request):
+    template = 'kiosk/checkin.html'
     if request.method == 'POST':
         form = AppointmentForm(request.POST)
         # check whether it's valid:
@@ -136,12 +162,13 @@ def checkin(request):
             response.raise_for_status()
             data = response.json()
 
-            return render(request, 'kiosk/checkin.html', {'form': AppointmentForm(), 'message':'Successfully checked in for %s!' % appt.patient.name})
+            return render(request, template, {'form': AppointmentForm(), 'message':'Successfully checked in for %s!' % appt.patient.name})
 
     else:
         form = AppointmentForm()
+        getTodaysAppointments(Doctor.objects.all()[0])
 
-    return render(request, 'kiosk/checkin.html', {'form': form})
+    return render(request, template, {'form': form})
 
 def login_redirect(request):
     error = request.GET.get('error')
@@ -182,10 +209,37 @@ def login_redirect(request):
       defaults=params
     )
 
-    # get appointments for today /appointments
-    getTodaysAppointments(doctor)
+    offices = []
 
-    return render(request, 'kiosk/login_redirect.html', {'doctor':username, 'doctor_created':doctorCreated}) #patients:createdPatients
+    url = '%s/api/offices' % BASE_URL
+    while url:
+      data = requests.get(url, headers=getHeader(doctor.access_token)).json()
+      offices.extend(data['results'])
+      url = data['next'] # A JSON null on the last page
+
+    for officeDict in offices:
+      office_id = officeDict['id']
+      params = {
+        'name':officeDict['name'],
+        'office_id':office_id,
+        'doctor':doctor
+      }
+      office, officeCreated = Office.objects.update_or_create(
+        office_id=office_id,
+        defaults=params
+      )
+
+      for exam_room in officeDict['exam_rooms']:
+        params = {
+          'room_id':exam_room['index'],
+          'office':office
+        }
+        e, roomCreated = ExamRoom.objects.update_or_create(
+          defaults=params,
+          **params
+        )
+
+    return render(request, 'kiosk/login_redirect.html', {'doctor':username, 'offices':offices})
 
 
 '''
