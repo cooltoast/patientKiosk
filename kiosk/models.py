@@ -50,6 +50,7 @@ class Appointment(models.Model):
   patient = models.ForeignKey(Patient, default=None, blank=True, null=True, on_delete=models.CASCADE)
   exam_room = models.ForeignKey(ExamRoom, default=None, blank=True, null=True, on_delete=models.CASCADE)
   office = models.ForeignKey(Office, on_delete=models.CASCADE)
+  status = models.CharField(default='', max_length=200)
   is_break = models.BooleanField(default=False)
 
   def __unicode__(self):

@@ -11,13 +11,13 @@ class AppointmentForm(forms.Form):
 
 
 class NewAppointmentForm(forms.Form):
-    scheduled_time = forms.TimeField()
-    duration = forms.IntegerField()
-    doctor = forms.ModelChoiceField(queryset=Doctor.objects.all())
-    patient = forms.ModelChoiceField(queryset=Patient.objects.all())
-    exam_room = forms.IntegerField()
-    office = forms.IntegerField()
+  scheduled_time = forms.TimeField()
+  duration = forms.IntegerField()
+  doctor = forms.ModelChoiceField(queryset=Doctor.objects.all())
+  patient = forms.ModelChoiceField(queryset=Patient.objects.all())
+  office = forms.ModelChoiceField(queryset=Office.objects.filter(is_active=True))
+  exam_room = forms.ModelChoiceField(queryset=Office.objects.get(is_active=True).examroom_set.all())
 
-    def create_appt(self):
-        print 'yo'
-        pass
+  def create_appt(self):
+    print 'yo'
+    pass

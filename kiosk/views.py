@@ -23,12 +23,15 @@ class NewAppointmentFormView(FormView):
         # It should return an HttpResponse.
         formData = form.cleaned_data
         doctor = formData['doctor']
+        examRoom = formData['exam_room']
+        office = formData['office']
+        patient = formData['patient']
         params = {
             'doctor':doctor.doctor_id,
             'duration':formData['duration'],
-            'exam_room':formData['exam_room'],
-            'office':formData['office'],
-            'patient':formData['patient'].patient_id,
+            'exam_room':examRoom.room_id,
+            'office':office.office_id,
+            'patient':patient.patient_id,
             'scheduled_time':datetime.datetime.combine(datetime.date.today(), formData['scheduled_time']),
             'status':'Arrived'
         }
@@ -37,7 +40,24 @@ class NewAppointmentFormView(FormView):
         response = requests.post(url, headers=getHeader(doctor.access_token), data=params)
         response.raise_for_status()
         data = response.json()
-        form.create_appt()
+
+        # form.create_appt()
+
+        # update Appointment if exists or create new
+        params['appointment_id'] = data['id']
+        params['doctor'] = doctor
+        params['exam_room'] = examRoom
+        params['office'] = office
+        params['patient'] = patient
+
+        appointment, appointmentCreated = Appointment.objects.update_or_create(
+          appointment_id=params['appointment_id'],
+          defaults=params
+        )
+
+        if appointmentCreated:
+          print 'created appointment: %s' % appointment
+
         return super(NewAppointmentFormView, self).form_valid(form)
 
 
