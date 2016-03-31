@@ -11,6 +11,9 @@ class Doctor(models.Model):
   refresh_token = models.CharField(max_length=200)
   expires_timestamp = models.DateTimeField()
 
+  def __unicode__(self):
+    return '%s, %s' % (self.name, self.doctor_id)
+
 
 class Patient(models.Model):
   name = models.CharField(max_length=200)
@@ -20,7 +23,7 @@ class Patient(models.Model):
   email = models.EmailField(default=None)
   #add more fields
 
-  def __str__(self):
+  def __unicode__(self):
     return '%s, %s' % (self.name, self.date_of_birth.date())
 
 

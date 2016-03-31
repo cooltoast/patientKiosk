@@ -10,6 +10,37 @@ BASE_URL = 'https://drchrono.com'
 
 scope = 'patients:read patients:write calendar:read calendar:write clinical:read clinical:write'
 
+from .forms import NewAppointmentForm
+from django.views.generic.edit import FormView
+
+class NewAppointmentFormView(FormView):
+    template_name = 'kiosk/new_appt.html'
+    form_class = NewAppointmentForm
+    success_url = '/kiosk/new_appt'
+
+    def form_valid(self, form):
+        # This method is called when valid form data has been POSTed.
+        # It should return an HttpResponse.
+        formData = form.cleaned_data
+        doctor = formData['doctor']
+        params = {
+            'doctor':doctor.doctor_id,
+            'duration':formData['duration'],
+            'exam_room':formData['exam_room'],
+            'office':formData['office'],
+            'patient':formData['patient'].patient_id,
+            'scheduled_time':datetime.datetime.combine(datetime.date.today(), formData['scheduled_time']),
+            'status':'Arrived'
+        }
+        url = '%s/api/appointments' % BASE_URL
+
+        response = requests.post(url, headers=getHeader(doctor.access_token), data=params)
+        response.raise_for_status()
+        data = response.json()
+        form.create_appt()
+        return super(NewAppointmentFormView, self).form_valid(form)
+
+
 def getHeader(access_token):
   return {
     'Authorization': 'Bearer %s' % access_token
@@ -89,6 +120,9 @@ def getTodaysAppointments(doctor):
 # Create your views here.
 def login(request):
     return render(request, 'kiosk/login.html', {'redirect_uri':settings.REDIRECT_URI, 'client_id':settings.CLIENT_ID, 'scope':scope})
+
+def new_appt(request):
+    return render(request, 'kiosk/new_appt.html')
 
 def checkin(request):
     if request.method == 'POST':
