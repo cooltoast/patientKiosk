@@ -324,17 +324,15 @@ def validate_patient_form(request):
   if request.method == 'GET':
     firstName = request.GET['firstName']
     lastName = request.GET['lastName']
-    dob = request.GET['dob']
-    datetimeDOB = datetime.datetime.strptime(dob,'%Y-%m-%d')
-    timezoneAwareDatetimeDOB = pytz.utc.localize(datetimeDOB)
+    date_of_birth = request.GET['dob']
+    datetimeDOB = datetime.datetime.strptime(date_of_birth,'%Y-%m-%d')
+    dob = pytz.utc.localize(datetimeDOB)
+    pytz.utc.localize(datetimeDOB)
+
     full_name = firstName + ' ' + lastName
     r = {}
-    import pdb;pdb.set_trace()
     try:
-      p = Patient.objects.get(name=full_name,
-                              date_of_birth__year=timezoneAwareDatetimeDOB.year,
-                              date_of_birth__month=timezoneAwareDatetimeDOB.month,
-                              date_of_birth__day=timezoneAwareDatetimeDOB.day)
+      p = Patient.objects.get(name=full_name, date_of_birth__year=dob.year, date_of_birth__month=dob.month, date_of_birth__day=dob.day)
       r['result'] = 1
       r['message'] = 'Welcome %s!' % full_name
       a = Appointment.objects.filter(patient=p)
@@ -374,7 +372,8 @@ def updatePatientList(doctor):
     full_name = patient['first_name'] + ' ' + patient['last_name']
     dobString = patient['date_of_birth'].replace('-','')
     dob = datetime.datetime.strptime(dobString,'%Y%m%d')
-    timezoneAwareDob = datetime.datetime.combine(dob, datetime.time.min)
+    timezoneDOB = datetime.datetime.combine(dob, datetime.time.min)
+    timezoneAwareDob = pytz.utc.localize(timezoneDOB)
     patient_id = patient['id']
 
     # update if exists or create new
