@@ -6,25 +6,29 @@
 {% if message %}
   <div>{{message}}</div>
 {% endif %}
-<form action="/kiosk/checkin/" method="post">
-  {% csrf_token %}
-  {{ form }}
-  <input type="submit" value="Submit" />
-</form>
 <br>
-<form id='patientValidate' action="/kiosk/validate_patient_form/" method="post">
+
+<form id='patientValidate'>
+  {% csrf_token %}
   First Name: <input id='firstname' type='text' required />
   Last Name: <input id='lastname' type='text' required />
   Date of Birth: <input id='dob' type='date' required />
   <input type="submit" value="Validate" />
 </form>
+
 <div id='message'></div>
+
 <div style='display:none' id='newPatientLink'>We can't find your info, you can <a href='/kiosk/new_patient'>sign up as a new patient</a></div>
+
 <div style='display:none' id='selectAppt' >
-  <form action="/kiosk/checkin/" method="post">
+  <form id='selectApptForm' action="/kiosk/checkin_appt/" method="get">
+    {% csrf_token %}
+    <select id='selectAppt' name="appt">
+    </select>
     <input type="submit" value="Check In" />
   </form>
 </div>
+
 <br>
 <div>
   <a href='/kiosk/refresh_appts'>Refresh appointments</a>
@@ -47,9 +51,13 @@ $('#patientValidate').submit(function(e) {
   $.get('/kiosk/validate_patient_form/', params)
     .done(function(data) {
       $('#message').html(data.message);
+      $('select').find('option').remove();
       if (data.result) {
         $('#selectAppt').show();
         $('#newPatientLink').hide();
+        $.each(data.data, function() {
+          $('select').append('<option value=' + this.pk + '>' + this.appt + '</option>');
+        });
       }
       else {
         $('#selectAppt').hide();

@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.conf import settings
 import datetime, pytz, requests
 
@@ -226,8 +226,31 @@ def set_office(request):
 
 
 def checkin(request):
+  return render(request, 'kiosk/checkin.html')
+
+def checkin_appt(request):
+  if request.method == 'GET':
+    import pdb;pdb.set_trace()
+    appt_pk = request.GET['appt']
+    appt = Appointment.objects.get(pk=appt_pk)
+
+    url = '%s/api/appointments/%s' % (BASE_URL, appt.appointment_id)
+
+    response = requests.patch(url, headers=getHeader(appt.doctor.access_token), data={'status':"Arrived"})
+    response.raise_for_status()
+    data = response.json()
+
+    r = {'message':'Successfully checked in for %s!' % appt.patient.name}
+    return JsonResponse(r)
+
+  else:
+    return HttpResponse('only GET allowed')
+
+'''
+def checkin(request):
     template = 'kiosk/checkin.html'
     if request.method == 'POST':
+        import pdb;pdb.set_trace()
         form = AppointmentForm(request.POST)
         # check whether it's valid:
         if form.is_valid():
@@ -244,6 +267,7 @@ def checkin(request):
         form = AppointmentForm()
 
     return render(request, template, {'form': form})
+'''
 
 def login_redirect(request):
     error = request.GET.get('error')
@@ -331,6 +355,14 @@ def validate_patient_form(request):
       p = Patient.objects.get(name=full_name, date_of_birth=dob)
       r['result'] = 1
       r['message'] = 'Welcome %s!' % full_name
+      a = Appointment.objects.filter(patient=p)
+      r['data'] = []
+      for i in a:
+        r['data'].append({
+          'pk':i.pk,
+          'appt':str(i)
+        })
+
     except Patient.DoesNotExist as e:
       print e
       r['result'] = 0
@@ -340,7 +372,6 @@ def validate_patient_form(request):
       r['result'] = 0
       r['message'] = str(e)
 
-    from django.http import JsonResponse
     return JsonResponse(r)
 
   else:
