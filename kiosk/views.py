@@ -230,8 +230,7 @@ def checkin(request):
 
 def checkin_appt(request):
   if request.method == 'GET':
-    import pdb;pdb.set_trace()
-    appt_pk = request.GET['appt']
+    appt_pk = request.GET['appt_pk']
     appt = Appointment.objects.get(pk=appt_pk)
 
     url = '%s/api/appointments/%s' % (BASE_URL, appt.appointment_id)
@@ -245,29 +244,6 @@ def checkin_appt(request):
 
   else:
     return HttpResponse('only GET allowed')
-
-'''
-def checkin(request):
-    template = 'kiosk/checkin.html'
-    if request.method == 'POST':
-        import pdb;pdb.set_trace()
-        form = AppointmentForm(request.POST)
-        # check whether it's valid:
-        if form.is_valid():
-            appt = form.cleaned_data['appointment']
-            url = '%s/api/appointments/%s' % (BASE_URL, appt.appointment_id)
-
-            response = requests.patch(url, headers=getHeader(appt.doctor.access_token), data={'status':"Arrived"})
-            response.raise_for_status()
-            data = response.json()
-
-            return render(request, template, {'form': AppointmentForm(), 'message':'Successfully checked in for %s!' % appt.patient.name})
-
-    else:
-        form = AppointmentForm()
-
-    return render(request, template, {'form': form})
-'''
 
 def login_redirect(request):
     error = request.GET.get('error')
@@ -349,10 +325,16 @@ def validate_patient_form(request):
     firstName = request.GET['firstName']
     lastName = request.GET['lastName']
     dob = request.GET['dob']
+    datetimeDOB = datetime.datetime.strptime(dob,'%Y-%m-%d')
+    timezoneAwareDatetimeDOB = pytz.utc.localize(datetimeDOB)
     full_name = firstName + ' ' + lastName
     r = {}
+    import pdb;pdb.set_trace()
     try:
-      p = Patient.objects.get(name=full_name, date_of_birth=dob)
+      p = Patient.objects.get(name=full_name,
+                              date_of_birth__year=timezoneAwareDatetimeDOB.year,
+                              date_of_birth__month=timezoneAwareDatetimeDOB.month,
+                              date_of_birth__day=timezoneAwareDatetimeDOB.day)
       r['result'] = 1
       r['message'] = 'Welcome %s!' % full_name
       a = Appointment.objects.filter(patient=p)

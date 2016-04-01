@@ -21,12 +21,14 @@
 <div style='display:none' id='newPatientLink'>We can't find your info, you can <a href='/kiosk/new_patient'>sign up as a new patient</a></div>
 
 <div style='display:none' id='selectAppt' >
-  <form id='selectApptForm' action="/kiosk/checkin_appt/" method="get">
+  <form id='selectApptForm'>
     {% csrf_token %}
     <select id='selectAppt' name="appt">
     </select>
     <input type="submit" value="Check In" />
   </form>
+  <br>
+  <div id='selectApptMessage'></div>
 </div>
 
 <br>
@@ -46,7 +48,7 @@ $('#patientValidate').submit(function(e) {
     'firstName' : $('#firstname').val(),
     'lastName' : $('#lastname').val(),
     'dob' : $('#dob').val()
-  }
+  };
 
   $.get('/kiosk/validate_patient_form/', params)
     .done(function(data) {
@@ -68,7 +70,21 @@ $('#patientValidate').submit(function(e) {
     .fail(function() {
       console.log("no");
     });
+});
 
+$('#selectApptForm').submit(function(e) {
+  e.preventDefault();
+  var params = {
+    'appt_pk' : $('select option:selected').val()
+  };
+
+  $.get('/kiosk/checkin_appt/', params)
+    .done(function(data) {
+      $('#selectApptMessage').html(data.message);
+    })
+    .fail(function() {
+      console.log("no");
+    });
 });
 </script>
 {% endblock %}
