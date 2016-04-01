@@ -61,7 +61,7 @@ class NewPatientFormView(FormView):
         return super(NewPatientFormView, self).form_valid(form)
 
 class NewAppointmentFormView(FormView):
-    template_name = createNewTemplate
+    template_name = 'kiosk/new_appt.html'
     form_class = NewAppointmentForm
     success_url = '/kiosk/new_appt'
 
@@ -193,7 +193,7 @@ def login(request):
     return render(request, 'kiosk/login.html', {'redirect_uri':settings.REDIRECT_URI, 'client_id':settings.CLIENT_ID, 'scope':scope})
 
 def new_appt(request):
-    return render(request, createNewTemplate)
+    return render(request, 'kiosk/new_appt.html')
 
 def new_patient(request):
     return render(request, createNewTemplate)
@@ -318,6 +318,38 @@ def login_redirect(request):
     getTodaysAppointments(doctor)
 
     return render(request, 'kiosk/login_redirect.html', {'doctor':username, 'offices':offices})
+
+
+def validate_patient_form_new_appt(request):
+  if request.method == 'GET':
+    firstName = request.GET['firstName']
+    lastName = request.GET['lastName']
+    date_of_birth = request.GET['dob']
+    datetimeDOB = datetime.datetime.strptime(date_of_birth,'%Y-%m-%d')
+    dob = pytz.utc.localize(datetimeDOB)
+    pytz.utc.localize(datetimeDOB)
+
+    full_name = firstName + ' ' + lastName
+    r = {}
+    try:
+      p = Patient.objects.get(name=full_name, date_of_birth__year=dob.year, date_of_birth__month=dob.month, date_of_birth__day=dob.day)
+      r['result'] = 1
+      r['message'] = 'Welcome %s!' % full_name
+      r['data'] = {'pk':p.pk}
+
+    except Patient.DoesNotExist as e:
+      print e
+      r['result'] = 0
+      r['message'] = str(e)
+    except Patient.MultipleObjectsReturned as e:
+      print e
+      r['result'] = 0
+      r['message'] = str(e)
+
+    return JsonResponse(r)
+
+  else:
+    return HttpResponse('only GET allowed')
 
 # return 1 if patient exists, else 0
 def validate_patient_form(request):

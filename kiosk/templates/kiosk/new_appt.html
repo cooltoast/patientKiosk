@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block body %}
+<form id='patientValidate'>
+  {% csrf_token %}
+  First Name: <input id='firstname' type='text' required />
+  Last Name: <input id='lastname' type='text' required />
+  Date of Birth: <input id='dob' type='date' required />
+  <input type="submit" value="Validate" />
+</form>
+
+<div id='message'></div>
+
+<div style='display:none' id='newPatientLink'>We can't find your info, you can <a href='/kiosk/new_patient'>sign up as a new patient</a></div>
+
+<div style='display:none' id='newApptForm'>
+  <form action="" method="post">{% csrf_token %}
+      {{ form.as_p }}
+      <input id='patient_pk' type='hidden' value='' />
+      <input type="submit" value="Submit" />
+  </form>
+</div>
+<a href='/kiosk/checkin'>Back home to checkin</a>
+<script>
+$('#patientValidate').submit(function(e) {
+  e.preventDefault();
+  var params = {
+    'firstName' : $('#firstname').val(),
+    'lastName' : $('#lastname').val(),
+    'dob' : $('#dob').val()
+  };
+
+  $.get('/kiosk/validate_patient_form_new_appt/', params)
+    .done(function(data) {
+      $('#message').html(data.message);
+      if (data.result) {
+        $('#newApptForm').show();
+        $('#newPatientLink').hide();
+        $('#patient_pk').val(data.data.pk);
+      }
+      else {
+        $('#newApptForm').hide();
+        $('#newPatientLink').show();
+      }
+
+    })
+    .fail(function() {
+      console.log("no");
+    });
+});
+</script>
+{% endblock %}
