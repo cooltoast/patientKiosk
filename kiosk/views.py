@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from django.conf import settings
 import datetime, pytz, requests
@@ -116,11 +116,9 @@ def getTodaysAppointments(doctor):
 
   appointments = [] 
   
-  activeOffice = Office.objects.get(is_active=True)
   url = '%s/api/appointments' % BASE_URL
   params = {
     'doctor':doctor.doctor_id,
-    'office':activeOffice.office_id,
     'date':datetime.datetime.now().isoformat()
   }
   while url:
@@ -169,9 +167,10 @@ def getTodaysAppointments(doctor):
     scheduled_time = datetime.datetime.strptime(scheduled_time_iso, "%Y-%m-%dT%H:%M:%S")
     timezoneAwareScheduledTime = pytz.utc.localize(scheduled_time)
 
+    office = Office.objects.get(office_id=appointment['office'])
     examRoom = None
     if not is_break:
-      examRoom = activeOffice.examroom_set.get(room_id=appointment['exam_room'])
+      examRoom = office.examroom_set.get(room_id=appointment['exam_room'])
 
     # update Appointment if exists or create new
     params = {
@@ -181,7 +180,7 @@ def getTodaysAppointments(doctor):
       'doctor':doctor,
       'patient':patient,
       'exam_room':examRoom,
-      'office':activeOffice,
+      'office':office,
       'is_break':is_break
     }
     appointment, appointmentCreated = Appointment.objects.update_or_create(
@@ -198,6 +197,15 @@ def new_appt(request):
 
 def new_patient(request):
     return render(request, createNewTemplate)
+
+def refresh_appts(request):
+    getTodaysAppointments(Doctor.objects.get())
+    return redirect('/kiosk/checkin')
+
+def refresh_patients(request):
+    updatePatientList(Doctor.objects.get())
+    return redirect('/kiosk/checkin')
+
 
 def set_office(request):
     template = 'kiosk/set_office.html'
@@ -234,7 +242,6 @@ def checkin(request):
 
     else:
         form = AppointmentForm()
-        getTodaysAppointments(Doctor.objects.all()[0])
 
     return render(request, template, {'form': form})
 
@@ -307,10 +314,12 @@ def login_redirect(request):
           **params
         )
 
+
+    getTodaysAppointments(doctor)
+
     return render(request, 'kiosk/login_redirect.html', {'doctor':username, 'offices':offices})
 
 
-'''
 def updatePatientList(doctor):
   patients = []
   createdPatients = []
@@ -325,7 +334,7 @@ def updatePatientList(doctor):
     full_name = patient['first_name'] + ' ' + patient['last_name']
     dobString = patient['date_of_birth'].replace('-','')
     dob = datetime.datetime.strptime(dobString,'%Y%m%d')
-    timezoneAwareDob = pytz.timezone('America/Los_Angeles').localize(dob)
+    timezoneAwareDob = datetime.datetime.combine(dob, datetime.time.min)
     patient_id = patient['id']
 
     # update if exists or create new
@@ -345,5 +354,6 @@ def updatePatientList(doctor):
       # only add important info
       createdPatients.append(params)
 
-  return createdPatients
-'''
+
+
+  return patientCreated, createdPatients

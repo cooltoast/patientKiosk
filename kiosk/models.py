@@ -21,7 +21,7 @@ class Office(models.Model):
   is_active = models.BooleanField(default=False)
 
   def __unicode__(self):
-    return '%s, id: %s, is_active: %s' % (self.name, self.office_id, self.is_active)
+    return '%s, id: %s' % (self.name, self.office_id)
 
 class ExamRoom(models.Model):
   room_id = models.IntegerField(default=-1)

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block body %}
-<h4>Welcome to Dr. <b>{{doctor}}</b>'s office!</h4>
+<h4>Welcome!</h4>
 <br>
 <h2>If you have an appointment, sign in below</h2>
 {% if message %}
@@ -11,6 +11,10 @@
   {{ form }}
   <input type="submit" value="Submit" />
 </form>
+<br>
+<a href='/kiosk/refresh_appts'>Refresh appointments</a>
+<br>
+<a href='/kiosk/refresh_patients'>Refresh patients</a>
 <br>
 <a href='/kiosk/new_patient'>Sign up as a new patient</a>
 <br>
