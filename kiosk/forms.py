@@ -16,7 +16,11 @@ class NewAppointmentForm(forms.Form):
   doctor = forms.ModelChoiceField(queryset=Doctor.objects.all())
   patient = forms.ModelChoiceField(queryset=Patient.objects.all())
   office = forms.ModelChoiceField(queryset=Office.objects.filter(is_active=True))
-  exam_room = forms.ModelChoiceField(queryset=Office.objects.get(is_active=True).examroom_set.all())
+
+  try:
+    exam_room = forms.ModelChoiceField(queryset=Office.objects.get(is_active=True).examroom_set.all())
+  except Office.DoesNotExist as e:
+    print e
 
   def create_appt(self):
     print 'yo'
