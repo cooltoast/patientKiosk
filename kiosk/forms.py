@@ -21,3 +21,15 @@ class NewAppointmentForm(forms.Form):
   def create_appt(self):
     print 'yo'
     pass
+
+class NewPatientForm(forms.Form):
+  first_name = forms.CharField()
+  last_name = forms.CharField()
+  gender = forms.ChoiceField(choices=(('Female', 'Female'),('Male', 'Male'),('Other', 'Other')))
+  doctor = forms.ModelChoiceField(queryset=Doctor.objects.all())
+  date_of_birth = forms.DateField(widget=forms.SelectDateWidget(years=[n for n in range(datetime.datetime.now().year, 1898, -1)]))
+  email = forms.EmailField()
+
+  def create_patient(self):
+    print 'yo'
+    pass

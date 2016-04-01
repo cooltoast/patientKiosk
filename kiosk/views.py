@@ -4,23 +4,68 @@ from django.conf import settings
 import datetime, pytz, requests
 
 from .models import Doctor, Patient, Appointment, Office, ExamRoom
-from .forms import AppointmentForm, OfficeForm
-
-BASE_URL = 'https://drchrono.com'
-
-scope = 'patients:read patients:write calendar:read calendar:write clinical:read clinical:write user:read user:write'
-
-from .forms import NewAppointmentForm
+from .forms import AppointmentForm, OfficeForm, NewAppointmentForm, NewPatientForm
 from django.views.generic.edit import FormView
 
+BASE_URL = 'https://drchrono.com'
+scope = 'patients:read patients:write calendar:read calendar:write clinical:read clinical:write user:read user:write'
+createNewTemplate = 'kiosk/createnew.html'
+
+class NewPatientFormView(FormView):
+    template_name = createNewTemplate
+    form_class = NewPatientForm
+    success_url = '/kiosk/new_patient'
+
+    def form_valid(self, form):
+        formData = form.cleaned_data
+        doctor = formData['doctor']
+        first_name = formData['first_name']
+        last_name = formData['last_name']
+        date_of_birth = formData['date_of_birth']
+        email = formData['email']
+        gender = formData['gender']
+        params = {
+            'date_of_birth':date_of_birth,
+            'doctor':doctor.doctor_id,
+            'gender':gender,
+            'first_name':first_name,
+            'last_name':last_name
+        }
+
+        url = '%s/api/patients' % BASE_URL
+
+        response = requests.post(url, headers=getHeader(doctor.access_token), data=params)
+        response.raise_for_status()
+        data = response.json()
+
+        full_name = first_name + ' ' + last_name
+        timezoneAwareDob = datetime.datetime.combine(date_of_birth, datetime.time.min)
+
+        patient_id = data['id']
+        # update Patient if exists or create new
+        params = {
+          'name':full_name,
+          'doctor':doctor,
+          'email':email,
+          'date_of_birth':timezoneAwareDob,
+          'patient_id':patient_id
+        }
+        patient, patientCreated = Patient.objects.update_or_create(
+          patient_id=patient_id,
+          defaults=params
+        )
+
+        if patientCreated:
+          print 'created patient: %s' % params
+
+        return super(NewPatientFormView, self).form_valid(form)
+
 class NewAppointmentFormView(FormView):
-    template_name = 'kiosk/new_appt.html'
+    template_name = createNewTemplate
     form_class = NewAppointmentForm
     success_url = '/kiosk/new_appt'
 
     def form_valid(self, form):
-        # This method is called when valid form data has been POSTed.
-        # It should return an HttpResponse.
         formData = form.cleaned_data
         doctor = formData['doctor']
         examRoom = formData['exam_room']
@@ -149,7 +194,10 @@ def login(request):
     return render(request, 'kiosk/login.html', {'redirect_uri':settings.REDIRECT_URI, 'client_id':settings.CLIENT_ID, 'scope':scope})
 
 def new_appt(request):
-    return render(request, 'kiosk/new_appt.html')
+    return render(request, createNewTemplate)
+
+def new_patient(request):
+    return render(request, createNewTemplate)
 
 def set_office(request):
     template = 'kiosk/set_office.html'
