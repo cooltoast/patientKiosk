@@ -11,4 +11,5 @@ urlpatterns = [
     url(r'^new_patient/', views.NewPatientFormView.as_view(), name='new_patient'),
     url(r'^refresh_appts/', views.refresh_appts, name='refresh_appts'),
     url(r'^refresh_patients/', views.refresh_patients, name='refresh_patients'),
+    url(r'^validate_patient_form/', views.validate_patient_form, name='validate_patient_form'),
 ]

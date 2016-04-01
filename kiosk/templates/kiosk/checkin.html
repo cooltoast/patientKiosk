@@ -12,11 +12,55 @@
   <input type="submit" value="Submit" />
 </form>
 <br>
-<a href='/kiosk/refresh_appts'>Refresh appointments</a>
+<form id='patientValidate' action="/kiosk/validate_patient_form/" method="post">
+  First Name: <input id='firstname' type='text' required />
+  Last Name: <input id='lastname' type='text' required />
+  Date of Birth: <input id='dob' type='date' required />
+  <input type="submit" value="Validate" />
+</form>
+<div id='message'></div>
+<div style='display:none' id='newPatientLink'>We can't find your info, you can <a href='/kiosk/new_patient'>sign up as a new patient</a></div>
+<div style='display:none' id='selectAppt' >
+  <form action="/kiosk/checkin/" method="post">
+    <input type="submit" value="Check In" />
+  </form>
+</div>
 <br>
-<a href='/kiosk/refresh_patients'>Refresh patients</a>
-<br>
-<a href='/kiosk/new_patient'>Sign up as a new patient</a>
-<br>
-<a href='/kiosk/new_appt'>Schedule a new appointment</a>
+<div>
+  <a href='/kiosk/refresh_appts'>Refresh appointments</a>
+  <br>
+  <a href='/kiosk/refresh_patients'>Refresh patients</a>
+  <br>
+  <a href='/kiosk/new_patient'>Sign up as a new patient</a>
+  <br>
+  <a href='/kiosk/new_appt'>Schedule a new appointment</a>
+</div>
+<script>
+$('#patientValidate').submit(function(e) {
+  e.preventDefault();
+  var params = {
+    'firstName' : $('#firstname').val(),
+    'lastName' : $('#lastname').val(),
+    'dob' : $('#dob').val()
+  }
+
+  $.get('/kiosk/validate_patient_form/', params)
+    .done(function(data) {
+      $('#message').html(data.message);
+      if (data.result) {
+        $('#selectAppt').show();
+        $('#newPatientLink').hide();
+      }
+      else {
+        $('#selectAppt').hide();
+        $('#newPatientLink').show();
+      }
+
+    })
+    .fail(function() {
+      console.log("no");
+    });
+
+});
+</script>
 {% endblock %}

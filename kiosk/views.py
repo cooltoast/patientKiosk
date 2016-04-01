@@ -319,6 +319,33 @@ def login_redirect(request):
 
     return render(request, 'kiosk/login_redirect.html', {'doctor':username, 'offices':offices})
 
+# return 1 if patient exists, else 0
+def validate_patient_form(request):
+  if request.method == 'GET':
+    firstName = request.GET['firstName']
+    lastName = request.GET['lastName']
+    dob = request.GET['dob']
+    full_name = firstName + ' ' + lastName
+    r = {}
+    try:
+      p = Patient.objects.get(name=full_name, date_of_birth=dob)
+      r['result'] = 1
+      r['message'] = 'Welcome %s!' % full_name
+    except Patient.DoesNotExist as e:
+      print e
+      r['result'] = 0
+      r['message'] = str(e)
+    except Patient.MultipleObjectsReturned as e:
+      print e
+      r['result'] = 0
+      r['message'] = str(e)
+
+    from django.http import JsonResponse
+    return JsonResponse(r)
+
+  else:
+    return HttpResponse('only GET allowed')
+
 
 def updatePatientList(doctor):
   patients = []
