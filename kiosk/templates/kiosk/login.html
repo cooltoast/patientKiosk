@@ -1,5 +1,8 @@
 {% extends "base.html" %}
 {% block body %}
+{% if message %}
+  <h3>{{message}}</h3>
+{% endif %}
 {% if client_id and scope %}
     <h4>Welcome, Doctor! Click the link below to sign in with drchrono</h4>
     <a href='https://drchrono.com/o/authorize/?redirect_uri={{redirect_uri|urlencode}}&response_type=code&client_id={{client_id|urlencode}}&scope={{scope|urlencode}}'>Log In</a>

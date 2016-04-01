@@ -192,6 +192,10 @@ def getTodaysAppointments(doctor):
 def login(request):
     return render(request, 'kiosk/login.html', {'redirect_uri':settings.REDIRECT_URI, 'client_id':settings.CLIENT_ID, 'scope':scope})
 
+def logout(request):
+    Doctor.objects.all().delete()
+    return render(request, 'kiosk/login.html', {'message':'Successfully logged out', 'redirect_uri':settings.REDIRECT_URI, 'client_id':settings.CLIENT_ID, 'scope':scope})
+
 def new_appt(request):
     return render(request, 'kiosk/new_appt.html')
 

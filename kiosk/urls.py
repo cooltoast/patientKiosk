@@ -14,4 +14,5 @@ urlpatterns = [
     url(r'^refresh_patients/', views.refresh_patients, name='refresh_patients'),
     url(r'^validate_patient_form/', views.validate_patient_form, name='validate_patient_form'),
     url(r'^validate_patient_form_new_appt/', views.validate_patient_form_new_appt, name='validate_patient_form_new_appt'),
+    url(r'^logout/', views.logout, name='logout'),
 ]
